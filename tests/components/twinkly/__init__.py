@@ -1,4 +1,4 @@
-"""Constants and mock for the twkinly component tests."""
+"""Constants and mock for the twinkly component tests."""
 
 from uuid import uuid4
 
@@ -14,7 +14,7 @@ TEST_MODEL = "twinkly_test_device_model"
 
 
 class ClientMock:
-    """A mock of the twinkly_client.TwinklyClient."""
+    """A mock of the ttls.Twinkly"""
 
     def __init__(self) -> None:
         """Create a mocked client."""
@@ -34,29 +34,35 @@ class ClientMock:
         """Get the mocked host."""
         return TEST_HOST
 
-    async def get_device_info(self):
+    async def get_details(self):
         """Get the mocked device info."""
         if self.is_offline:
             raise ClientConnectionError()
         return self.device_info
 
-    async def get_is_on(self) -> bool:
+    async def is_on(self) -> bool:
         """Get the mocked on/off state."""
         if self.is_offline:
             raise ClientConnectionError()
         return self.is_on
 
-    async def set_is_on(self, is_on: bool) -> None:
-        """Set the mocked on/off state."""
+    async def turn_off(self) -> None:
+        """Set the mocked on state."""
         if self.is_offline:
             raise ClientConnectionError()
-        self.is_on = is_on
+        self.is_on = True
+
+    async def turn_off(self) -> None:
+        """Set the mocked off state."""
+        if self.is_offline:
+            raise ClientConnectionError()
+        self.is_on = False
 
     async def get_brightness(self) -> int:
         """Get the mocked brightness."""
         if self.is_offline:
             raise ClientConnectionError()
-        return self.brightness
+        return {"value": self.brightness}
 
     async def set_brightness(self, brightness: int) -> None:
         """Set the mocked brightness."""

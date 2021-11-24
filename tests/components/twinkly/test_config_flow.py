@@ -37,7 +37,7 @@ async def test_invalid_host(hass):
 async def test_success_flow(hass):
     """Test that an entity is created when the flow completes."""
     client = ClientMock()
-    with patch("twinkly_client.TwinklyClient", return_value=client):
+    with patch("ttls.client.Twinkly", return_value=client):
         result = await hass.config_entries.flow.async_init(
             TWINKLY_DOMAIN, context={"source": config_entries.SOURCE_USER}
         )

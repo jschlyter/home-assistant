@@ -197,7 +197,7 @@ async def _create_entries(
     def get_client_mock(client, _):
         return client
 
-    with patch("twinkly_client.TwinklyClient", side_effect=get_client_mock):
+    with patch("ttls.client.Twinkly", side_effect=get_client_mock):
         config_entry = MockConfigEntry(
             domain=TWINKLY_DOMAIN,
             data={

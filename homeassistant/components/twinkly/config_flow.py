@@ -4,7 +4,7 @@ import asyncio
 import logging
 
 from aiohttp import ClientError
-import twinkly_client
+from ttls.client import Twinkly as TwinklyClient
 from voluptuous import Required, Schema
 
 from homeassistant import config_entries
@@ -38,7 +38,7 @@ class TwinklyConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         if host is not None:
             try:
-                device_info = await twinkly_client.TwinklyClient(host).get_device_info()
+                device_info = await TwinklyClient(host).get_details()
 
                 await self.async_set_unique_id(device_info[DEV_ID])
                 self._abort_if_unique_id_configured()
