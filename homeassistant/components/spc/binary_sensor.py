@@ -7,12 +7,12 @@ from homeassistant.components.binary_sensor import (
     BinarySensorDeviceClass,
     BinarySensorEntity,
 )
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 
-from . import DATA_API, SIGNAL_UPDATE_SENSOR
+from .const import DOMAIN, SIGNAL_UPDATE_SENSOR
 
 
 def _get_device_class(zone_type):
@@ -24,16 +24,11 @@ def _get_device_class(zone_type):
     }.get(zone_type)
 
 
-async def async_setup_platform(
-    hass: HomeAssistant,
-    config: ConfigType,
-    async_add_entities: AddEntitiesCallback,
-    discovery_info: DiscoveryInfoType | None = None,
+async def async_setup_entry(
+    hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
     """Set up the SPC binary sensor."""
-    if discovery_info is None:
-        return
-    api = hass.data[DATA_API]
+    api = hass.data[DOMAIN]
     async_add_entities(
         [
             SpcBinarySensor(zone)

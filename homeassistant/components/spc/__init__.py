@@ -1,81 +1,70 @@
 """Support for Vanderbilt (formerly Siemens) SPC alarm systems."""
-import logging
+
+import functools
 
 from pyspcwebgw import SpcWebGateway
 from pyspcwebgw.area import Area
 from pyspcwebgw.zone import Zone
-import voluptuous as vol
 
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers import aiohttp_client, discovery
-import homeassistant.helpers.config_validation as cv
+from homeassistant.exceptions import ConfigEntryNotReady
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.dispatcher import async_dispatcher_send
-from homeassistant.helpers.typing import ConfigType
 
-_LOGGER = logging.getLogger(__name__)
-
-CONF_WS_URL = "ws_url"
-CONF_API_URL = "api_url"
-
-DOMAIN = "spc"
-DATA_API = "spc_api"
-
-SIGNAL_UPDATE_ALARM = "spc_update_alarm_{}"
-SIGNAL_UPDATE_SENSOR = "spc_update_sensor_{}"
-
-CONFIG_SCHEMA = vol.Schema(
-    {
-        DOMAIN: vol.Schema(
-            {
-                vol.Required(CONF_WS_URL): cv.string,
-                vol.Required(CONF_API_URL): cv.string,
-            }
-        )
-    },
-    extra=vol.ALLOW_EXTRA,
+from .const import (
+    CONF_API_URL,
+    CONF_WS_URL,
+    DOMAIN,
+    SIGNAL_UPDATE_ALARM,
+    SIGNAL_UPDATE_SENSOR,
 )
 
+PLATFORMS = [
+    Platform.ALARM_CONTROL_PANEL,
+    Platform.BINARY_SENSOR,
+]
 
-async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
-    """Set up the SPC component."""
 
-    async def async_upate_callback(spc_object):
+async def async_update_callback(hass, spc_object):
 
-        if isinstance(spc_object, Area):
-            async_dispatcher_send(hass, SIGNAL_UPDATE_ALARM.format(spc_object.id))
-        elif isinstance(spc_object, Zone):
-            async_dispatcher_send(hass, SIGNAL_UPDATE_SENSOR.format(spc_object.id))
+    if isinstance(spc_object, Area):
+        async_dispatcher_send(hass, SIGNAL_UPDATE_ALARM.format(spc_object.id))
+    elif isinstance(spc_object, Zone):
+        async_dispatcher_send(hass, SIGNAL_UPDATE_SENSOR.format(spc_object.id))
 
-    session = aiohttp_client.async_get_clientsession(hass)
+
+async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Set up SPC component from a config entry."""
+    hass.data.setdefault(DOMAIN, {})
 
     spc = SpcWebGateway(
         loop=hass.loop,
-        session=session,
-        api_url=config[DOMAIN].get(CONF_API_URL),
-        ws_url=config[DOMAIN].get(CONF_WS_URL),
-        async_callback=async_upate_callback,
+        session=async_get_clientsession(hass),
+        api_url=entry.data[CONF_API_URL],
+        ws_url=entry.data[CONF_WS_URL],
+        async_callback=functools.partial(async_update_callback, hass),
     )
-
-    hass.data[DATA_API] = spc
 
     if not await spc.async_load_parameters():
-        _LOGGER.error("Failed to load area/zone information from SPC")
-        return False
+        raise ConfigEntryNotReady("Failed to load area/zone information from SPC")
 
-    # add sensor devices for each zone (typically motion/fire/door sensors)
-    hass.async_create_task(
-        discovery.async_load_platform(hass, Platform.BINARY_SENSOR, DOMAIN, {}, config)
-    )
+    hass.data[DOMAIN] = spc
 
-    # create a separate alarm panel for each area
-    hass.async_create_task(
-        discovery.async_load_platform(
-            hass, Platform.ALARM_CONTROL_PANEL, DOMAIN, {}, config
-        )
-    )
+    hass.config_entries.async_setup_platforms(entry, PLATFORMS)
 
     # start listening for incoming events over websocket
     spc.start()
 
     return True
+
+
+async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Unload a config entry."""
+    unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+    if unload_ok:
+        api = hass.data.pop(DOMAIN)
+        # api.stop()
+
+    return unload_ok

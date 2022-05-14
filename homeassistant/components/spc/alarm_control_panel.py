@@ -5,6 +5,7 @@ from pyspcwebgw.const import AreaMode
 
 import homeassistant.components.alarm_control_panel as alarm
 from homeassistant.components.alarm_control_panel import AlarmControlPanelEntityFeature
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
     STATE_ALARM_ARMED_AWAY,
     STATE_ALARM_ARMED_HOME,
@@ -15,9 +16,8 @@ from homeassistant.const import (
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 
-from . import DATA_API, SIGNAL_UPDATE_ALARM
+from .const import DOMAIN, SIGNAL_UPDATE_ALARM
 
 
 def _get_alarm_state(area):
@@ -35,16 +35,11 @@ def _get_alarm_state(area):
     return mode_to_state.get(area.mode)
 
 
-async def async_setup_platform(
-    hass: HomeAssistant,
-    config: ConfigType,
-    async_add_entities: AddEntitiesCallback,
-    discovery_info: DiscoveryInfoType | None = None,
+async def async_setup_entry(
+    hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
-    """Set up the SPC alarm control panel platform."""
-    if discovery_info is None:
-        return
-    api = hass.data[DATA_API]
+    """Set up the SPC alarm control panel."""
+    api = hass.data[DOMAIN]
     async_add_entities([SpcAlarm(area=area, api=api) for area in api.areas.values()])
 
 

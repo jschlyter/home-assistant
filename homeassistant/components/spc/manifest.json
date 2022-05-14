@@ -1,6 +1,7 @@
 {
   "domain": "spc",
   "name": "Vanderbilt SPC",
+  "config_flow": true,
   "documentation": "https://www.home-assistant.io/integrations/spc",
   "requirements": ["pyspcwebgw==0.5.0"],
   "codeowners": [],
