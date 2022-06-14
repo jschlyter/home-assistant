@@ -5,7 +5,7 @@ import logging
 from typing import Any, cast
 
 from aiohttp import ClientResponseError
-from bond_api import Action, Bond
+from bond_async import Action, Bond, BondType
 
 from homeassistant.util.async_ import gather_with_concurrency
 
@@ -81,6 +81,10 @@ class BondDevice:
     def supports_direction(self) -> bool:
         """Return True if this device supports any of the direction related commands."""
         return self._has_any_action({Action.SET_DIRECTION})
+
+    def supports_set_position(self) -> bool:
+        """Return True if this device supports setting the position."""
+        return self._has_any_action({Action.SET_POSITION})
 
     def supports_open(self) -> bool:
         """Return True if this device supports opening."""
@@ -220,4 +224,5 @@ class BondHub:
     @property
     def is_bridge(self) -> bool:
         """Return if the Bond is a Bond Bridge."""
-        return bool(self._bridge)
+        bondid = self._version["bondid"]
+        return bool(BondType.is_bridge_from_serial(bondid))

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+from itertools import chain
 import logging
 import ssl
 
@@ -48,6 +49,7 @@ from .device_trigger import (
     DEVICE_TYPE_SUBTYPE_MAP_TO_LIP,
     LEAP_TO_DEVICE_TYPE_SUBTYPE_MAP,
 )
+from .util import serial_to_unique_id
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -197,15 +199,15 @@ def _async_register_button_devices(
         if "serial" not in device or device["serial"] in seen:
             continue
         seen.add(device["serial"])
+        area, name = _area_and_name_from_name(device["name"])
         device_args = {
-            "name": device["name"],
+            "name": f"{area} {name}",
             "manufacturer": MANUFACTURER,
             "config_entry_id": config_entry_id,
             "identifiers": {(DOMAIN, device["serial"])},
             "model": f"{device['model']} ({device['type']})",
             "via_device": (DOMAIN, bridge_device["serial"]),
         }
-        area, _ = _area_and_name_from_name(device["name"])
         if area != UNASSIGNED_AREA:
             device_args["suggested_area"] = area
 
@@ -312,15 +314,16 @@ class LutronCasetaDevice(Entity):
         self._bridge_device = bridge_device
         if "serial" not in self._device:
             return
+        area, name = _area_and_name_from_name(device["name"])
+        self._attr_name = full_name = f"{area} {name}"
         info = DeviceInfo(
             identifiers={(DOMAIN, self.serial)},
             manufacturer=MANUFACTURER,
             model=f"{device['model']} ({device['type']})",
-            name=self.name,
+            name=full_name,
             via_device=(DOMAIN, self._bridge_device["serial"]),
             configuration_url=CONFIG_URL,
         )
-        area, _ = _area_and_name_from_name(device["name"])
         if area != UNASSIGNED_AREA:
             info[ATTR_SUGGESTED_AREA] = area
         self._attr_device_info = info
@@ -333,11 +336,6 @@ class LutronCasetaDevice(Entity):
     def device_id(self):
         """Return the device ID used for calling pylutron_caseta."""
         return self._device["device_id"]
-
-    @property
-    def name(self):
-        """Return the name of the device."""
-        return self._device["name"]
 
     @property
     def serial(self):
@@ -353,3 +351,50 @@ class LutronCasetaDevice(Entity):
     def extra_state_attributes(self):
         """Return the state attributes."""
         return {"device_id": self.device_id, "zone_id": self._device["zone"]}
+
+
+class LutronCasetaDeviceUpdatableEntity(LutronCasetaDevice):
+    """A lutron_caseta entity that can update by syncing data from the bridge."""
+
+    async def async_update(self):
+        """Update when forcing a refresh of the device."""
+        self._device = self._smartbridge.get_device_by_id(self.device_id)
+        _LOGGER.debug(self._device)
+
+
+def _id_to_identifier(lutron_id: str) -> None:
+    """Convert a lutron caseta identifier to a device identifier."""
+    return (DOMAIN, lutron_id)
+
+
+async def async_remove_config_entry_device(
+    hass: HomeAssistant, entry: config_entries.ConfigEntry, device_entry: dr.DeviceEntry
+) -> bool:
+    """Remove lutron_caseta config entry from a device."""
+    bridge: Smartbridge = hass.data[DOMAIN][entry.entry_id][BRIDGE_LEAP]
+    devices = bridge.get_devices()
+    buttons = bridge.buttons
+    occupancy_groups = bridge.occupancy_groups
+    bridge_device = devices[BRIDGE_DEVICE_ID]
+    bridge_unique_id = serial_to_unique_id(bridge_device["serial"])
+    all_identifiers: set[tuple[str, str]] = {
+        # Base bridge
+        _id_to_identifier(bridge_unique_id),
+        # Motion sensors and occupancy groups
+        *(
+            _id_to_identifier(
+                f"occupancygroup_{bridge_unique_id}_{device['occupancy_group_id']}"
+            )
+            for device in occupancy_groups.values()
+        ),
+        # Button devices such as pico remotes and all other devices
+        *(
+            _id_to_identifier(device["serial"])
+            for device in chain(devices.values(), buttons.values())
+        ),
+    }
+    return not any(
+        identifier
+        for identifier in device_entry.identifiers
+        if identifier in all_identifiers
+    )
