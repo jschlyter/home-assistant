@@ -413,6 +413,7 @@ FLOWS = {
         "youless",
         "zerproc",
         "zha",
+        "spc",
         "zwave_js",
         "zwave_me"
     ],
