@@ -5,8 +5,12 @@ from dataclasses import dataclass
 import logging
 from typing import Any
 
-from pyunifiprotect.data import Camera, RecordingMode, VideoMode
-from pyunifiprotect.data.base import ProtectAdoptableDeviceModel
+from pyunifiprotect.data import (
+    Camera,
+    ProtectAdoptableDeviceModel,
+    RecordingMode,
+    VideoMode,
+)
 
 from homeassistant.components.switch import SwitchEntity, SwitchEntityDescription
 from homeassistant.config_entries import ConfigEntry
@@ -43,7 +47,7 @@ async def _set_highfps(obj: Camera, value: bool) -> None:
         await obj.set_video_mode(VideoMode.DEFAULT)
 
 
-ALL_DEVICES_SWITCHES: tuple[ProtectSwitchEntityDescription, ...] = (
+CAMERA_SWITCHES: tuple[ProtectSwitchEntityDescription, ...] = (
     ProtectSwitchEntityDescription(
         key="ssh",
         name="SSH Enabled",
@@ -53,9 +57,6 @@ ALL_DEVICES_SWITCHES: tuple[ProtectSwitchEntityDescription, ...] = (
         ufp_value="is_ssh_enabled",
         ufp_set_method="set_ssh",
     ),
-)
-
-CAMERA_SWITCHES: tuple[ProtectSwitchEntityDescription, ...] = (
     ProtectSwitchEntityDescription(
         key="status_light",
         name="Status Light On",
@@ -131,6 +132,14 @@ CAMERA_SWITCHES: tuple[ProtectSwitchEntityDescription, ...] = (
         entity_category=EntityCategory.CONFIG,
         ufp_value="osd_settings.is_debug_enabled",
         ufp_set_method="set_osd_bitrate",
+    ),
+    ProtectSwitchEntityDescription(
+        key="motion",
+        name="Detections: Motion",
+        icon="mdi:run-fast",
+        entity_category=EntityCategory.CONFIG,
+        ufp_value="recording_settings.enable_motion_detection",
+        ufp_set_method="set_motion_detection",
     ),
     ProtectSwitchEntityDescription(
         key="smart_person",
@@ -223,6 +232,15 @@ SENSE_SWITCHES: tuple[ProtectSwitchEntityDescription, ...] = (
 
 LIGHT_SWITCHES: tuple[ProtectSwitchEntityDescription, ...] = (
     ProtectSwitchEntityDescription(
+        key="ssh",
+        name="SSH Enabled",
+        icon="mdi:lock",
+        entity_registry_enabled_default=False,
+        entity_category=EntityCategory.CONFIG,
+        ufp_value="is_ssh_enabled",
+        ufp_set_method="set_ssh",
+    ),
+    ProtectSwitchEntityDescription(
         key="status_light",
         name="Status Light On",
         icon="mdi:led-on",
@@ -243,6 +261,18 @@ DOORLOCK_SWITCHES: tuple[ProtectSwitchEntityDescription, ...] = (
     ),
 )
 
+VIEWER_SWITCHES: tuple[ProtectSwitchEntityDescription, ...] = (
+    ProtectSwitchEntityDescription(
+        key="ssh",
+        name="SSH Enabled",
+        icon="mdi:lock",
+        entity_registry_enabled_default=False,
+        entity_category=EntityCategory.CONFIG,
+        ufp_value="is_ssh_enabled",
+        ufp_set_method="set_ssh",
+    ),
+)
+
 
 async def async_setup_entry(
     hass: HomeAssistant,
@@ -254,11 +284,11 @@ async def async_setup_entry(
     entities: list[ProtectDeviceEntity] = async_all_device_entities(
         data,
         ProtectSwitch,
-        all_descs=ALL_DEVICES_SWITCHES,
         camera_descs=CAMERA_SWITCHES,
         light_descs=LIGHT_SWITCHES,
         sense_descs=SENSE_SWITCHES,
         lock_descs=DOORLOCK_SWITCHES,
+        viewer_descs=VIEWER_SWITCHES,
     )
     async_add_entities(entities)
 
