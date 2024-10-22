@@ -378,6 +378,7 @@ class SensorDeviceClass(StrEnum):
 
     Unit of measurement: `°C`, `°F`, `K`
     """
+
     VOLATILE_ORGANIC_COMPOUNDS = "volatile_organic_compounds"
     """Amount of VOC.
 
