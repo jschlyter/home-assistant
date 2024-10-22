@@ -35,6 +35,7 @@ from homeassistant.const import (
     UnitOfSpeed,
     UnitOfTemperature,
     UnitOfTime,
+    UnitOfVehicleEnergyConsumption,
     UnitOfVolume,
     UnitOfVolumeFlowRate,
     UnitOfVolumetricFlux,
@@ -61,6 +62,7 @@ from homeassistant.util.unit_conversion import (
     SpeedConverter,
     TemperatureConverter,
     UnitlessRatioConverter,
+    VehicleEnergyConsumptionConverter,
     VolumeConverter,
     VolumeFlowRateConverter,
 )
@@ -368,6 +370,12 @@ class SensorDeviceClass(StrEnum):
     Unit of measurement: `°C`, `°F`, `K`
     """
 
+    VEHICLE_ENERGY_CONSUMPTION = "vehicle_energy_consumption"
+    """Vehicle energy consumption.
+
+    Unit of measurement: `kWh/100km`
+    """
+
     VOLATILE_ORGANIC_COMPOUNDS = "volatile_organic_compounds"
     """Amount of VOC.
 
@@ -509,6 +517,7 @@ UNIT_CONVERTERS: dict[SensorDeviceClass | str | None, type[BaseUnitConverter]] =
     SensorDeviceClass.PRESSURE: PressureConverter,
     SensorDeviceClass.SPEED: SpeedConverter,
     SensorDeviceClass.TEMPERATURE: TemperatureConverter,
+    SensorDeviceClass.VEHICLE_ENERGY_CONSUMPTION: VehicleEnergyConsumptionConverter,
     SensorDeviceClass.VOLATILE_ORGANIC_COMPOUNDS_PARTS: UnitlessRatioConverter,
     SensorDeviceClass.VOLTAGE: ElectricPotentialConverter,
     SensorDeviceClass.VOLUME: VolumeConverter,
@@ -572,6 +581,7 @@ DEVICE_CLASS_UNITS: dict[SensorDeviceClass, set[type[StrEnum] | str | None]] = {
     SensorDeviceClass.SPEED: set(UnitOfSpeed).union(set(UnitOfVolumetricFlux)),
     SensorDeviceClass.SULPHUR_DIOXIDE: {CONCENTRATION_MICROGRAMS_PER_CUBIC_METER},
     SensorDeviceClass.TEMPERATURE: set(UnitOfTemperature),
+    SensorDeviceClass.VEHICLE_ENERGY_CONSUMPTION: set(UnitOfVehicleEnergyConsumption),
     SensorDeviceClass.VOLATILE_ORGANIC_COMPOUNDS: {
         CONCENTRATION_MICROGRAMS_PER_CUBIC_METER
     },
@@ -641,6 +651,7 @@ DEVICE_CLASS_STATE_CLASSES: dict[SensorDeviceClass, set[SensorStateClass]] = {
     SensorDeviceClass.SULPHUR_DIOXIDE: {SensorStateClass.MEASUREMENT},
     SensorDeviceClass.TEMPERATURE: {SensorStateClass.MEASUREMENT},
     SensorDeviceClass.TIMESTAMP: set(),
+    SensorDeviceClass.VEHICLE_ENERGY_CONSUMPTION: {SensorStateClass.MEASUREMENT},
     SensorDeviceClass.VOLATILE_ORGANIC_COMPOUNDS: {SensorStateClass.MEASUREMENT},
     SensorDeviceClass.VOLATILE_ORGANIC_COMPOUNDS_PARTS: {SensorStateClass.MEASUREMENT},
     SensorDeviceClass.VOLTAGE: {SensorStateClass.MEASUREMENT},

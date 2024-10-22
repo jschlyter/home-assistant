@@ -1552,6 +1552,15 @@ _DEPRECATED_DATA_RATE_GIBIBYTES_PER_SECOND: Final = DeprecatedConstantEnum(
 """Deprecated: please use UnitOfDataRate.GIBIBYTES_PER_SECOND"""
 
 
+# Vehicle Energy Consumption units
+class UnitOfVehicleEnergyConsumption(StrEnum):
+    """Vehicle Energy Consumption units."""
+
+    KILO_WATT_HOUR_PER_100_KM = "kWh/100km"
+    KILO_WATT_HOUR_PER_100_MI = "kWh/100mi"
+    MILES_PER_KILO_WATT_HOUR = "mi/kWh"
+
+
 # States
 COMPRESSED_STATE_STATE: Final = "s"
 COMPRESSED_STATE_ATTRIBUTES: Final = "a"
