@@ -16,6 +16,7 @@ from homeassistant.const import (
     UnitOfElectricCurrent,
     UnitOfElectricPotential,
     UnitOfEnergy,
+    UnitOfEnergyDistance,
     UnitOfInformation,
     UnitOfLength,
     UnitOfMass,
@@ -24,7 +25,6 @@ from homeassistant.const import (
     UnitOfSpeed,
     UnitOfTemperature,
     UnitOfTime,
-    UnitOfVehicleEnergyConsumption,
     UnitOfVolume,
     UnitOfVolumeFlowRate,
     UnitOfVolumetricFlux,
@@ -40,6 +40,7 @@ from homeassistant.util.unit_conversion import (
     ElectricCurrentConverter,
     ElectricPotentialConverter,
     EnergyConverter,
+    EnergyDistanceConverter,
     InformationConverter,
     MassConverter,
     PowerConverter,
@@ -47,7 +48,6 @@ from homeassistant.util.unit_conversion import (
     SpeedConverter,
     TemperatureConverter,
     UnitlessRatioConverter,
-    VehicleEnergyConsumptionConverter,
     VolumeConverter,
     VolumeFlowRateConverter,
 )
@@ -75,7 +75,7 @@ _ALL_CONVERTERS: dict[type[BaseUnitConverter], list[str | None]] = {
         SpeedConverter,
         TemperatureConverter,
         UnitlessRatioConverter,
-        VehicleEnergyConsumptionConverter,
+        EnergyDistanceConverter,
         VolumeConverter,
         VolumeFlowRateConverter,
     )
@@ -106,6 +106,11 @@ _GET_UNIT_RATIO: dict[type[BaseUnitConverter], tuple[str | None, str | None, flo
         1000,
     ),
     EnergyConverter: (UnitOfEnergy.WATT_HOUR, UnitOfEnergy.KILO_WATT_HOUR, 1000),
+    EnergyDistanceConverter: (
+        UnitOfEnergyDistance.KILO_WATT_HOUR_PER_100_KM,
+        UnitOfEnergyDistance.KILO_WATT_HOUR_PER_100_MI,
+        1000 / 1609.344,
+    ),
     InformationConverter: (UnitOfInformation.BITS, UnitOfInformation.BYTES, 8),
     MassConverter: (UnitOfMass.STONES, UnitOfMass.KILOGRAMS, 0.157473),
     PowerConverter: (UnitOfPower.WATT, UnitOfPower.KILO_WATT, 1000),
@@ -121,11 +126,6 @@ _GET_UNIT_RATIO: dict[type[BaseUnitConverter], tuple[str | None, str | None, flo
         0.555556,
     ),
     UnitlessRatioConverter: (PERCENTAGE, None, 100),
-    VehicleEnergyConsumptionConverter: (
-        UnitOfVehicleEnergyConsumption.KILO_WATT_HOUR_PER_100_KM,
-        UnitOfVehicleEnergyConsumption.KILO_WATT_HOUR_PER_100_MI,
-        1000 / 1609.344,
-    ),
     VolumeConverter: (UnitOfVolume.GALLONS, UnitOfVolume.LITERS, 0.264172),
     VolumeFlowRateConverter: (
         UnitOfVolumeFlowRate.CUBIC_METERS_PER_HOUR,
@@ -386,6 +386,32 @@ _CONVERTED_VALUE: dict[
         (10, UnitOfEnergy.GIGA_CALORIE, 10000, UnitOfEnergy.MEGA_CALORIE),
         (10, UnitOfEnergy.GIGA_CALORIE, 11.622222, UnitOfEnergy.MEGA_WATT_HOUR),
     ],
+    EnergyDistanceConverter: [
+        (
+            10,
+            UnitOfEnergyDistance.KILO_WATT_HOUR_PER_100_KM,
+            16.09344,
+            UnitOfEnergyDistance.KILO_WATT_HOUR_PER_100_MI,
+        ),
+        (
+            10,
+            UnitOfEnergyDistance.KILO_WATT_HOUR_PER_100_KM,
+            6.213712,
+            UnitOfEnergyDistance.MILES_PER_KILO_WATT_HOUR,
+        ),
+        (
+            20,
+            UnitOfEnergyDistance.MILES_PER_KILO_WATT_HOUR,
+            3.106856,
+            UnitOfEnergyDistance.KILO_WATT_HOUR_PER_100_KM,
+        ),
+        (
+            20,
+            UnitOfEnergyDistance.KILO_WATT_HOUR_PER_100_MI,
+            5,
+            UnitOfEnergyDistance.MILES_PER_KILO_WATT_HOUR,
+        ),
+    ],
     InformationConverter: [
         (8e3, UnitOfInformation.BITS, 8, UnitOfInformation.KILOBITS),
         (8e6, UnitOfInformation.BITS, 8, UnitOfInformation.MEGABITS),
@@ -559,32 +585,6 @@ _CONVERTED_VALUE: dict[
         (5, None, 5000000000, CONCENTRATION_PARTS_PER_BILLION),
         (5, None, 5000000, CONCENTRATION_PARTS_PER_MILLION),
         (5, PERCENTAGE, 0.05, None),
-    ],
-    VehicleEnergyConsumptionConverter: [
-        (
-            10,
-            UnitOfVehicleEnergyConsumption.KILO_WATT_HOUR_PER_100_KM,
-            16.09344,
-            UnitOfVehicleEnergyConsumption.KILO_WATT_HOUR_PER_100_MI,
-        ),
-        (
-            10,
-            UnitOfVehicleEnergyConsumption.KILO_WATT_HOUR_PER_100_KM,
-            6.213712,
-            UnitOfVehicleEnergyConsumption.MILES_PER_KILO_WATT_HOUR,
-        ),
-        (
-            20,
-            UnitOfVehicleEnergyConsumption.MILES_PER_KILO_WATT_HOUR,
-            3.106856,
-            UnitOfVehicleEnergyConsumption.KILO_WATT_HOUR_PER_100_KM,
-        ),
-        (
-            20,
-            UnitOfVehicleEnergyConsumption.KILO_WATT_HOUR_PER_100_MI,
-            5,
-            UnitOfVehicleEnergyConsumption.MILES_PER_KILO_WATT_HOUR,
-        ),
     ],
     VolumeConverter: [
         (5, UnitOfVolume.LITERS, 1.32086, UnitOfVolume.GALLONS),
