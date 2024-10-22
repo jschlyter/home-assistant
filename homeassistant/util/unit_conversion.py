@@ -280,7 +280,7 @@ class EnergyDistanceConverter(BaseUnitConverter):
     ) -> Callable[[float], float]:
         """Convert a consumption unit from one unit to another."""
         # We cannot use the implementation from BaseUnitConverter here because the
-        # Beaufort scale is not a constant value to divide or multiply with.
+        # scale is not a constant value to divide or multiply with.
         if (
             from_unit not in EnergyDistanceConverter.VALID_UNITS
             or to_unit not in EnergyDistanceConverter.VALID_UNITS
