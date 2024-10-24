@@ -429,6 +429,18 @@ _CONVERTED_VALUE: dict[
             10,
             UnitOfEnergyDistance.MILES_PER_KILO_WATT_HOUR,
         ),
+        (
+            1,
+            UnitOfEnergyDistance.KILO_WATT_HOUR_PER_100_MI,
+            100,
+            UnitOfEnergyDistance.MILES_PER_KILO_WATT_HOUR,
+        ),
+        (
+            100,
+            UnitOfEnergyDistance.MILES_PER_KILO_WATT_HOUR,
+            1,
+            UnitOfEnergyDistance.KILO_WATT_HOUR_PER_100_MI,
+        ),
     ],
     InformationConverter: [
         (8e3, UnitOfInformation.BITS, 8, UnitOfInformation.KILOBITS),
