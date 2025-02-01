@@ -7,7 +7,7 @@ from collections.abc import Awaitable, Callable, Coroutine
 from contextlib import suppress
 from datetime import datetime
 from http import HTTPStatus
-from ipaddress import IPv4Address, IPv6Address, ip_address
+from ipaddress import IPv4Address, IPv4Network, IPv6Address, IPv6Network, ip_address
 import logging
 from socket import gethostbyaddr, herror
 from typing import Any, Concatenate, Final
@@ -40,6 +40,9 @@ KEY_FAILED_LOGIN_ATTEMPTS = AppKey[defaultdict[IPv4Address | IPv6Address, int]](
     "ha_failed_login_attempts"
 )
 KEY_LOGIN_THRESHOLD = AppKey[int]("ban_manager.ip_bans_lookup")
+KEY_BAN_EXCLUDED_NETWORKS = AppKey[set[IPv4Network | IPv6Network]](
+    "ha_ban_excluded_networks"
+)
 
 NOTIFICATION_ID_BAN: Final = "ip-ban"
 NOTIFICATION_ID_LOGIN: Final = "http-login"
@@ -53,11 +56,17 @@ SCHEMA_IP_BAN_ENTRY: Final = vol.Schema(
 
 
 @callback
-def setup_bans(hass: HomeAssistant, app: Application, login_threshold: int) -> None:
+def setup_bans(
+    hass: HomeAssistant,
+    app: Application,
+    login_threshold: int,
+    excluded_networks: list[IPv4Network | IPv6Network] | None = None,
+) -> None:
     """Create IP Ban middleware for the app."""
     app.middlewares.append(ban_middleware)
     app[KEY_FAILED_LOGIN_ATTEMPTS] = defaultdict[IPv4Address | IPv6Address, int](int)
     app[KEY_LOGIN_THRESHOLD] = login_threshold
+    app[KEY_BAN_EXCLUDED_NETWORKS] = set(excluded_networks or [])
     app[KEY_BAN_MANAGER] = IpBanManager(hass)
 
     async def ban_startup(app: Application) -> None:
@@ -152,6 +161,15 @@ async def process_wrong_login(request: Request) -> None:
     # Supervisor IP should never be banned
     if is_hassio(hass) and str(remote_addr) == get_supervisor_ip():
         return
+
+    for excluded_network in request.app[KEY_BAN_EXCLUDED_NETWORKS]:
+        if remote_addr in excluded_network:
+            _LOGGER.debug(
+                "IP %s not banned, network %s excluded",
+                remote_addr,
+                excluded_network,
+            )
+            return
 
     if (
         request.app[KEY_FAILED_LOGIN_ATTEMPTS][remote_addr]
