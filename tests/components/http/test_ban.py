@@ -1,7 +1,7 @@
 """The tests for the Home Assistant HTTP component."""
 
 from http import HTTPStatus
-from ipaddress import ip_address
+from ipaddress import ip_address, ip_network
 import os
 from unittest.mock import AsyncMock, Mock, mock_open, patch
 
@@ -31,6 +31,7 @@ from tests.typing import ClientSessionGenerator
 SUPERVISOR_IP = "1.2.3.4"
 BANNED_IPS = ["200.201.202.203", "100.64.0.2"]
 BANNED_IPS_WITH_SUPERVISOR = [*BANNED_IPS, SUPERVISOR_IP]
+EXCLUDED_NETWORKS = [ip_network("192.0.2.0/24")]
 
 
 @pytest.fixture(name="hassio_env")
@@ -384,6 +385,56 @@ async def test_failed_login_attempts_counter(
     resp = await client.get("/auth_false")
     assert resp.status == HTTPStatus.UNAUTHORIZED
     assert app[KEY_FAILED_LOGIN_ATTEMPTS][remote_ip] == 2
+
+
+async def test_failed_login_excluded_network(
+    hass: HomeAssistant, aiohttp_client: ClientSessionGenerator
+) -> None:
+    """Testing if failed login attempts counter is not set for clients from excluded networks."""
+    app = web.Application()
+    app[KEY_HASS] = hass
+
+    async def auth_handler(request):
+        """Return 200 status code."""
+        return None, 200
+
+    async def auth_true_handler(request):
+        """Return 200 status code."""
+        process_success_login(request)
+        return None, 200
+
+    app.router.add_get(
+        "/auth_true",
+        request_handler_factory(hass, Mock(requires_auth=True), auth_true_handler),
+    )
+    app.router.add_get(
+        "/auth_false",
+        request_handler_factory(hass, Mock(requires_auth=True), auth_handler),
+    )
+    app.router.add_get(
+        "/", request_handler_factory(hass, Mock(requires_auth=False), auth_handler)
+    )
+
+    setup_bans(hass, app, 1, EXCLUDED_NETWORKS)
+    remote_ip = ip_address("192.0.2.1")
+    mock_real_ip(app)("192.0.2.1")
+
+    @middleware
+    async def mock_auth(request, handler):
+        """Mock auth middleware."""
+        if "auth_true" in request.path:
+            request[KEY_AUTHENTICATED] = True
+        else:
+            request[KEY_AUTHENTICATED] = False
+        return await handler(request)
+
+    app.middlewares.append(mock_auth)
+
+    client = await aiohttp_client(app)
+
+    resp = await client.get("/auth_false")
+    assert resp.status == HTTPStatus.UNAUTHORIZED
+    assert app[KEY_FAILED_LOGIN_ATTEMPTS].get(remote_ip) is None
 
 
 async def test_single_ban_file_entry(
